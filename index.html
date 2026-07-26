@@ -400,164 +400,107 @@
         </div>
     </section>
 
-  // --- 3. Canvas Simulators (Hero & Main Workbench) ---
-        
-        // Setup Hero Canvas (T-Rex Silhouette Laser Cut)
-        const heroCanvas = document.getElementById('hero-laser-canvas');
-        if(heroCanvas) {
-            const ctxHero = heroCanvas.getContext('2d');
-            
-            // Asegurar que el canvas mantenga su tamaño real
-            function resizeHeroCanvas() {
-                heroCanvas.width = heroCanvas.offsetWidth;
-                heroCanvas.height = heroCanvas.offsetHeight;
-            }
-            window.addEventListener('resize', resizeHeroCanvas);
-            resizeHeroCanvas();
-            
-            // Coordenadas relativas (0 a 1) para la silueta del T-Rex (Pixel Art)
-            const tRexPoints = [
-                {x: 0.55, y: 0.25}, // Inicio cabeza (arriba)
-                {x: 0.75, y: 0.25}, // Hocico superior
-                {x: 0.75, y: 0.32}, // Hocico frontal
-                {x: 0.62, y: 0.32}, // Boca interior superior
-                {x: 0.70, y: 0.38}, // Boca interior inferior
-                {x: 0.60, y: 0.38}, // Comisura boca
-                {x: 0.60, y: 0.45}, // Pecho
-                {x: 0.68, y: 0.45}, // Brazo superior
-                {x: 0.68, y: 0.50}, // Mano
-                {x: 0.58, y: 0.50}, // Brazo inferior
-                {x: 0.56, y: 0.55}, // Barriga
-                {x: 0.65, y: 0.65}, // Rodilla
-                {x: 0.68, y: 0.80}, // Pierna frontal
-                {x: 0.75, y: 0.80}, // Dedo pie
-                {x: 0.75, y: 0.82}, // Suela frontal
-                {x: 0.55, y: 0.82}, // Talón frontal
-                {x: 0.50, y: 0.65}, // Entrepierna
-                {x: 0.45, y: 0.82}, // Talón trasero
-                {x: 0.35, y: 0.82}, // Suela trasera
-                {x: 0.40, y: 0.75}, // Empeine trasero
-                {x: 0.20, y: 0.65}, // Cola inferior
-                {x: 0.10, y: 0.55}, // Punta de la cola
-                {x: 0.35, y: 0.50}, // Cola superior
-                {x: 0.45, y: 0.40}, // Espalda
-                {x: 0.45, y: 0.25}, // Cuello trasero
-                {x: 0.55, y: 0.25}  // Cierre en cabeza
-            ];
-
-            let targetIndex = 0;
-            let drawnPath = []; // Almacena las líneas ya cortadas
-            
-            // Puntos actuales de interpolación
-            let currentPoint = { ...tRexPoints[0] };
-            let nextPoint = tRexPoints[1];
-            
-            function animateHeroCanvas() {
-                // Limpiar el canvas para el siguiente frame
-                ctxHero.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
-                
-                // Dibujar la cuadrícula de fondo (Grid)
-                ctxHero.beginPath();
-                for(let x = 0; x < heroCanvas.width; x += 20) {
-                    ctxHero.moveTo(x, 0); ctxHero.lineTo(x, heroCanvas.height);
-                }
-                for(let y = 0; y < heroCanvas.height; y += 20) {
-                    ctxHero.moveTo(0, y); ctxHero.lineTo(heroCanvas.width, y);
-                }
-                ctxHero.strokeStyle = 'rgba(255, 255, 255, 0.02)';
-                ctxHero.lineWidth = 1;
-                ctxHero.stroke();
-
-                // Calcular posición exacta en píxeles
-                const p1 = { x: currentPoint.x * heroCanvas.width, y: currentPoint.y * heroCanvas.height };
-                const p2 = { x: nextPoint.x * heroCanvas.width, y: nextPoint.y * heroCanvas.height };
-                
-                // Movimiento constante simulando los motores paso a paso CNC
-                const dx = p2.x - p1.x;
-                const dy = p2.y - p1.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                const step = 2.5; // Velocidad del láser en píxeles por frame
-                
-                if (dist < step) {
-                    // Si llegamos al nodo, pasamos al siguiente
-                    currentPoint = { ...nextPoint };
-                    drawnPath.push({ ...currentPoint });
-                    targetIndex = (targetIndex + 1) % tRexPoints.length;
-                    nextPoint = tRexPoints[targetIndex];
-                    
-                    // Reiniciar el trazo si da la vuelta completa
-                    if (targetIndex === 0) drawnPath = [];
-                } else {
-                    currentPoint.x += (dx / dist * step) / heroCanvas.width;
-                    currentPoint.y += (dy / dist * step) / heroCanvas.height;
-                }
-
-                const currentPxX = currentPoint.x * heroCanvas.width;
-                const currentPxY = currentPoint.y * heroCanvas.height;
-
-                // 1. Dibujar el rastro del corte (Verde Neón TEXEL)
-                if (drawnPath.length > 0) {
-                    ctxHero.beginPath();
-                    ctxHero.moveTo(drawnPath[0].x * heroCanvas.width, drawnPath[0].y * heroCanvas.height);
-                    for(let i = 1; i < drawnPath.length; i++) {
-                        ctxHero.lineTo(drawnPath[i].x * heroCanvas.width, drawnPath[i].y * heroCanvas.height);
-                    }
-                    ctxHero.lineTo(currentPxX, currentPxY);
-                    ctxHero.strokeStyle = '#8aff00';
-                    ctxHero.lineWidth = 2.5;
-                    ctxHero.shadowBlur = 12;
-                    ctxHero.shadowColor = '#8aff00';
-                    ctxHero.lineJoin = 'miter';
-                    ctxHero.stroke();
-                    ctxHero.shadowBlur = 0; // Reset
-                }
-
-                // 2. Dibujar el Haz Láser (Rojo cayendo desde el origen Y:0)
-                ctxHero.beginPath();
-                ctxHero.moveTo(currentPxX, 0); 
-                ctxHero.lineTo(currentPxX, currentPxY);
-                ctxHero.strokeStyle = '#ff0055'; // laser-red
-                ctxHero.lineWidth = 1.5;
-                ctxHero.shadowBlur = 10;
-                ctxHero.shadowColor = '#ff0055';
-                ctxHero.stroke();
-                ctxHero.shadowBlur = 0;
-
-                // 3. Dibujar el punto de impacto brillante
-                ctxHero.beginPath();
-                ctxHero.arc(currentPxX, currentPxY, 2.5, 0, Math.PI * 2);
-                ctxHero.fillStyle = '#ffffff';
-                ctxHero.shadowBlur = 15;
-                ctxHero.shadowColor = '#ffffff';
-                ctxHero.fill();
-                ctxHero.shadowBlur = 0;
-                
-                // Actualizar las coordenadas del HUD en pantalla
-                const hudX = document.getElementById('hud-x');
-                const hudY = document.getElementById('hud-y');
-                if(hudX && hudY) {
-                    hudX.innerText = currentPxX.toFixed(1).padStart(5, '0');
-                    hudY.innerText = currentPxY.toFixed(1).padStart(5, '0');
-                }
-                
-                requestAnimationFrame(animateHeroCanvas);
-            }
-            
-            // Iniciar la máquina
-            animateHeroCanvas();
-            
-            // Reiniciar el ciclo al hacer clic
-            heroCanvas.addEventListener('click', () => {
-                targetIndex = 0;
-                currentPoint = { ...tRexPoints[0] };
-                nextPoint = tRexPoints[1];
-                drawnPath = [];
-            });
+/* 3. Canvas Simulators (Hero & Main Workbench) */
+const heroCanvas = document.getElementById('hero-laser-canvas');
+if(heroCanvas) {
+    const ctxHero = heroCanvas.getContext('2d');
+    function resizeHeroCanvas() {
+        heroCanvas.width = heroCanvas.offsetWidth;
+        heroCanvas.height = heroCanvas.offsetHeight;
+    }
+    window.addEventListener('resize', resizeHeroCanvas);
+    resizeHeroCanvas();
+    const tRexPoints = [
+        {x: 0.55, y: 0.25}, {x: 0.75, y: 0.25}, {x: 0.75, y: 0.32},
+        {x: 0.62, y: 0.32}, {x: 0.70, y: 0.38}, {x: 0.60, y: 0.38},
+        {x: 0.60, y: 0.45}, {x: 0.68, y: 0.45}, {x: 0.68, y: 0.50},
+        {x: 0.58, y: 0.50}, {x: 0.56, y: 0.55}, {x: 0.65, y: 0.65},
+        {x: 0.68, y: 0.80}, {x: 0.75, y: 0.80}, {x: 0.75, y: 0.82},
+        {x: 0.55, y: 0.82}, {x: 0.50, y: 0.65}, {x: 0.45, y: 0.82},
+        {x: 0.35, y: 0.82}, {x: 0.40, y: 0.75}, {x: 0.20, y: 0.65},
+        {x: 0.10, y: 0.55}, {x: 0.35, y: 0.50}, {x: 0.45, y: 0.40},
+        {x: 0.45, y: 0.25}, {x: 0.55, y: 0.25}
+    ];
+    let targetIndex = 0;
+    let drawnPath = [];
+    let currentPoint = { ...tRexPoints[0] };
+    let nextPoint = tRexPoints[1];
+    function animateHeroCanvas() {
+        ctxHero.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+        ctxHero.beginPath();
+        for(let x = 0; x < heroCanvas.width; x += 20) { ctxHero.moveTo(x, 0); ctxHero.lineTo(x, heroCanvas.height); }
+        for(let y = 0; y < heroCanvas.height; y += 20) { ctxHero.moveTo(0, y); ctxHero.lineTo(heroCanvas.width, y); }
+        ctxHero.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+        ctxHero.lineWidth = 1;
+        ctxHero.stroke();
+        const p1 = { x: currentPoint.x * heroCanvas.width, y: currentPoint.y * heroCanvas.height };
+        const p2 = { x: nextPoint.x * heroCanvas.width, y: nextPoint.y * heroCanvas.height };
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const step = 2.5;
+        if (dist < step) {
+            currentPoint = { ...nextPoint };
+            drawnPath.push({ ...currentPoint });
+            targetIndex = (targetIndex + 1) % tRexPoints.length;
+            nextPoint = tRexPoints[targetIndex];
+            if (targetIndex === 0) drawnPath = [];
+        } else {
+            currentPoint.x += (dx / dist * step) / heroCanvas.width;
+            currentPoint.y += (dy / dist * step) / heroCanvas.height;
         }
-
-        // Setup Simulator Workbench
-        const simCanvas = document.getElementById('sim-canvas');
-        const simCtx = simCanvas.getContext('2d');
+        const currentPxX = currentPoint.x * heroCanvas.width;
+        const currentPxY = currentPoint.y * heroCanvas.height;
+        if (drawnPath.length > 0) {
+            ctxHero.beginPath();
+            ctxHero.moveTo(drawnPath[0].x * heroCanvas.width, drawnPath[0].y * heroCanvas.height);
+            for(let i = 1; i < drawnPath.length; i++) {
+                ctxHero.lineTo(drawnPath[i].x * heroCanvas.width, drawnPath[i].y * heroCanvas.height);
+            }
+            ctxHero.lineTo(currentPxX, currentPxY);
+            ctxHero.strokeStyle = '#8aff00';
+            ctxHero.lineWidth = 2.5;
+            ctxHero.shadowBlur = 12;
+            ctxHero.shadowColor = '#8aff00';
+            ctxHero.lineJoin = 'miter';
+            ctxHero.stroke();
+            ctxHero.shadowBlur = 0;
+        }
+        ctxHero.beginPath();
+        ctxHero.moveTo(currentPxX, 0); 
+        ctxHero.lineTo(currentPxX, currentPxY);
+        ctxHero.strokeStyle = '#ff0055';
+        ctxHero.lineWidth = 1.5;
+        ctxHero.shadowBlur = 10;
+        ctxHero.shadowColor = '#ff0055';
+        ctxHero.stroke();
+        ctxHero.shadowBlur = 0;
+        ctxHero.beginPath();
+        ctxHero.arc(currentPxX, currentPxY, 2.5, 0, Math.PI * 2);
+        ctxHero.fillStyle = '#ffffff';
+        ctxHero.shadowBlur = 15;
+        ctxHero.shadowColor = '#ffffff';
+        ctxHero.fill();
+        ctxHero.shadowBlur = 0;
+        const hudX = document.getElementById('hud-x');
+        const hudY = document.getElementById('hud-y');
+        if(hudX && hudY) {
+            hudX.innerText = currentPxX.toFixed(1).padStart(5, '0');
+            hudY.innerText = currentPxY.toFixed(1).padStart(5, '0');
+        }
+        requestAnimationFrame(animateHeroCanvas);
+    }
+    animateHeroCanvas();
+    heroCanvas.addEventListener('click', () => {
+        targetIndex = 0;
+        currentPoint = { ...tRexPoints[0] };
+        nextPoint = tRexPoints[1];
+        drawnPath = [];
+    });
+}
+/* Setup Simulator Workbench */
+const simCanvas = document.getElementById('sim-canvas');
+const simCtx = simCanvas.getContext('2d');
 
     <!-- INSTANT QUOTE CALCULATOR SECTION -->
     <section id="cotizador" class="py-24 bg-dark-surface border-b border-brand-500/20 relative">
