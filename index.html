@@ -400,103 +400,164 @@
         </div>
     </section>
 
-      <!-- INTERACTIVE LASER WORKBENCH SIMULATOR SECTION -->
-    <section id="simulador" class="py-24 bg-dark-bg border-b border-brand-500/20 relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center max-w-3xl mx-auto mb-12 reveal">
-                <div class="inline-block px-3 py-1 bg-brand-500/10 border border-brand-500/40 text-brand-500 font-mono text-xs rounded mb-3">EXPERIENCIA INTERACTIVA</div>
-                <h2 class="text-5xl md:text-6xl text-brand-500 font-display tracking-widest text-glow">/// SIMULADOR DE CORTE LÁSER</h2>
-                <p class="text-gray-300 text-lg">Prueba cómo trabaja nuestra cortadora CNC CO2 en tiempo real. Configura materiales, texto personalizado y ejecuta la prueba.</p>
-            </div>
+  // --- 3. Canvas Simulators (Hero & Main Workbench) ---
+        
+        // Setup Hero Canvas (T-Rex Silhouette Laser Cut)
+        const heroCanvas = document.getElementById('hero-laser-canvas');
+        if(heroCanvas) {
+            const ctxHero = heroCanvas.getContext('2d');
+            
+            // Asegurar que el canvas mantenga su tamaño real
+            function resizeHeroCanvas() {
+                heroCanvas.width = heroCanvas.offsetWidth;
+                heroCanvas.height = heroCanvas.offsetHeight;
+            }
+            window.addEventListener('resize', resizeHeroCanvas);
+            resizeHeroCanvas();
+            
+            // Coordenadas relativas (0 a 1) para la silueta del T-Rex (Pixel Art)
+            const tRexPoints = [
+                {x: 0.55, y: 0.25}, // Inicio cabeza (arriba)
+                {x: 0.75, y: 0.25}, // Hocico superior
+                {x: 0.75, y: 0.32}, // Hocico frontal
+                {x: 0.62, y: 0.32}, // Boca interior superior
+                {x: 0.70, y: 0.38}, // Boca interior inferior
+                {x: 0.60, y: 0.38}, // Comisura boca
+                {x: 0.60, y: 0.45}, // Pecho
+                {x: 0.68, y: 0.45}, // Brazo superior
+                {x: 0.68, y: 0.50}, // Mano
+                {x: 0.58, y: 0.50}, // Brazo inferior
+                {x: 0.56, y: 0.55}, // Barriga
+                {x: 0.65, y: 0.65}, // Rodilla
+                {x: 0.68, y: 0.80}, // Pierna frontal
+                {x: 0.75, y: 0.80}, // Dedo pie
+                {x: 0.75, y: 0.82}, // Suela frontal
+                {x: 0.55, y: 0.82}, // Talón frontal
+                {x: 0.50, y: 0.65}, // Entrepierna
+                {x: 0.45, y: 0.82}, // Talón trasero
+                {x: 0.35, y: 0.82}, // Suela trasera
+                {x: 0.40, y: 0.75}, // Empeine trasero
+                {x: 0.20, y: 0.65}, // Cola inferior
+                {x: 0.10, y: 0.55}, // Punta de la cola
+                {x: 0.35, y: 0.50}, // Cola superior
+                {x: 0.45, y: 0.40}, // Espalda
+                {x: 0.45, y: 0.25}, // Cuello trasero
+                {x: 0.55, y: 0.25}  // Cierre en cabeza
+            ];
 
-            <div class="bg-dark-card border border-dark-border rounded-2xl overflow-hidden p-6 lg:p-8 shadow-2xl reveal">
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            let targetIndex = 0;
+            let drawnPath = []; // Almacena las líneas ya cortadas
+            
+            // Puntos actuales de interpolación
+            let currentPoint = { ...tRexPoints[0] };
+            let nextPoint = tRexPoints[1];
+            
+            function animateHeroCanvas() {
+                // Limpiar el canvas para el siguiente frame
+                ctxHero.clearRect(0, 0, heroCanvas.width, heroCanvas.height);
+                
+                // Dibujar la cuadrícula de fondo (Grid)
+                ctxHero.beginPath();
+                for(let x = 0; x < heroCanvas.width; x += 20) {
+                    ctxHero.moveTo(x, 0); ctxHero.lineTo(x, heroCanvas.height);
+                }
+                for(let y = 0; y < heroCanvas.height; y += 20) {
+                    ctxHero.moveTo(0, y); ctxHero.lineTo(heroCanvas.width, y);
+                }
+                ctxHero.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+                ctxHero.lineWidth = 1;
+                ctxHero.stroke();
+
+                // Calcular posición exacta en píxeles
+                const p1 = { x: currentPoint.x * heroCanvas.width, y: currentPoint.y * heroCanvas.height };
+                const p2 = { x: nextPoint.x * heroCanvas.width, y: nextPoint.y * heroCanvas.height };
+                
+                // Movimiento constante simulando los motores paso a paso CNC
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const step = 2.5; // Velocidad del láser en píxeles por frame
+                
+                if (dist < step) {
+                    // Si llegamos al nodo, pasamos al siguiente
+                    currentPoint = { ...nextPoint };
+                    drawnPath.push({ ...currentPoint });
+                    targetIndex = (targetIndex + 1) % tRexPoints.length;
+                    nextPoint = tRexPoints[targetIndex];
                     
-                    <!-- Control Settings Panel -->
-                    <div class="lg:col-span-4 space-y-6 bg-dark-surface p-6 rounded-xl border border-white/5">
-                        <h3 class="text-2xl font-display text-white border-b border-white/10 pb-3 flex items-center gap-2">
-                            <i class="fas fa-sliders-h text-brand-500 text-lg"></i> CONTROLES MÁQUINA
-                        </h3>
+                    // Reiniciar el trazo si da la vuelta completa
+                    if (targetIndex === 0) drawnPath = [];
+                } else {
+                    currentPoint.x += (dx / dist * step) / heroCanvas.width;
+                    currentPoint.y += (dy / dist * step) / heroCanvas.height;
+                }
 
-                        <!-- Vector Shape Preset Selector -->
-                        <div>
-                            <label class="block text-xs font-mono text-gray-400 mb-2 uppercase">Figura Vectorial a Trazar:</label>
-                            <select id="sim-shape-select" class="w-full bg-black border border-dark-border focus:border-brand-500 rounded px-4 py-2 text-white font-sans focus:outline-none text-sm">
-                                <option value="trex" selected>🦖 Silueta T-Rex (Mascota TEXEL)</option>
-                                <option value="text">🔤 Texto Personalizado</option>
-                                <option value="mandala">💠 Mandala Geométrica</option>
-                                <option value="gear">⚙️ Engranaje Industrial</option>
-                                <option value="star">⭐ Estrella Vectorial 8 Puntas</option>
-                            </select>
-                        </div>
+                const currentPxX = currentPoint.x * heroCanvas.width;
+                const currentPxY = currentPoint.y * heroCanvas.height;
 
-                        <!-- Custom Text Input -->
-                        <div id="sim-text-container" class="hidden">
-                            <label class="block text-xs font-mono text-gray-400 mb-2 uppercase">Texto a Cortar / Grabar:</label>
-                            <input type="text" id="sim-text-input" value="TEXEL 2026" maxlength="15" class="w-full bg-black border border-dark-border focus:border-brand-500 rounded px-4 py-2 text-white font-mono uppercase focus:outline-none focus:ring-1 focus:ring-brand-500">
-                        </div>
+                // 1. Dibujar el rastro del corte (Verde Neón TEXEL)
+                if (drawnPath.length > 0) {
+                    ctxHero.beginPath();
+                    ctxHero.moveTo(drawnPath[0].x * heroCanvas.width, drawnPath[0].y * heroCanvas.height);
+                    for(let i = 1; i < drawnPath.length; i++) {
+                        ctxHero.lineTo(drawnPath[i].x * heroCanvas.width, drawnPath[i].y * heroCanvas.height);
+                    }
+                    ctxHero.lineTo(currentPxX, currentPxY);
+                    ctxHero.strokeStyle = '#8aff00';
+                    ctxHero.lineWidth = 2.5;
+                    ctxHero.shadowBlur = 12;
+                    ctxHero.shadowColor = '#8aff00';
+                    ctxHero.lineJoin = 'miter';
+                    ctxHero.stroke();
+                    ctxHero.shadowBlur = 0; // Reset
+                }
 
-                        <!-- Material Selector -->
-                        <div>
-                            <label class="block text-xs font-mono text-gray-400 mb-2 uppercase">Seleccionar Material Simulado:</label>
-                            <select id="sim-material-select" class="w-full bg-black border border-dark-border focus:border-laser-purple rounded px-4 py-2 text-white font-sans focus:outline-none">
-                                <option value="acrilico-verde">Acrílico Neón Verde (3mm)</option>
-                                <option value="acrilico-morado" selected>Acrílico Neón Morado / UV (3mm)</option>
-                                <option value="mdf">MDF Natural (3mm)</option>
-                                <option value="acrilico-negro">Acrílico Negro Brillante (5mm)</option>
-                                <option value="madera">Triplay Cedro (4mm)</option>
-                                <option value="espejo">Acrílico Espejo Dorado</option>
-                            </select>
-                        </div>
+                // 2. Dibujar el Haz Láser (Rojo cayendo desde el origen Y:0)
+                ctxHero.beginPath();
+                ctxHero.moveTo(currentPxX, 0); 
+                ctxHero.lineTo(currentPxX, currentPxY);
+                ctxHero.strokeStyle = '#ff0055'; // laser-red
+                ctxHero.lineWidth = 1.5;
+                ctxHero.shadowBlur = 10;
+                ctxHero.shadowColor = '#ff0055';
+                ctxHero.stroke();
+                ctxHero.shadowBlur = 0;
 
-                        <!-- Speed Slider -->
-                        <div>
-                            <div class="flex justify-between text-xs font-mono text-gray-400 mb-1">
-                                <span>VELOCIDAD DE CABEZAL:</span>
-                                <span id="sim-speed-val" class="text-brand-500 font-bold">50 mm/s</span>
-                            </div>
-                            <input type="range" id="sim-speed-slider" min="10" max="100" value="50" class="w-full accent-brand-500 bg-black h-2 rounded cursor-pointer">
-                        </div>
+                // 3. Dibujar el punto de impacto brillante
+                ctxHero.beginPath();
+                ctxHero.arc(currentPxX, currentPxY, 2.5, 0, Math.PI * 2);
+                ctxHero.fillStyle = '#ffffff';
+                ctxHero.shadowBlur = 15;
+                ctxHero.shadowColor = '#ffffff';
+                ctxHero.fill();
+                ctxHero.shadowBlur = 0;
+                
+                // Actualizar las coordenadas del HUD en pantalla
+                const hudX = document.getElementById('hud-x');
+                const hudY = document.getElementById('hud-y');
+                if(hudX && hudY) {
+                    hudX.innerText = currentPxX.toFixed(1).padStart(5, '0');
+                    hudY.innerText = currentPxY.toFixed(1).padStart(5, '0');
+                }
+                
+                requestAnimationFrame(animateHeroCanvas);
+            }
+            
+            // Iniciar la máquina
+            animateHeroCanvas();
+            
+            // Reiniciar el ciclo al hacer clic
+            heroCanvas.addEventListener('click', () => {
+                targetIndex = 0;
+                currentPoint = { ...tRexPoints[0] };
+                nextPoint = tRexPoints[1];
+                drawnPath = [];
+            });
+        }
 
-                        <!-- Mode Toggle -->
-                        <div>
-                            <label class="block text-xs font-mono text-gray-400 mb-2 uppercase">Modo de Operación:</label>
-                            <div class="grid grid-cols-2 gap-2 font-mono text-xs">
-                                <button id="mode-cut-btn" class="bg-brand-500 text-black font-bold py-2 px-3 rounded border border-brand-500 hover:opacity-90">CORTE VECTOR</button>
-                                <button id="mode-engrave-btn" class="bg-black text-gray-400 py-2 px-3 rounded border border-dark-border hover:text-white">GRABADO LASER</button>
-                            </div>
-                        </div>
-
-                        <!-- Fire Action Buttons -->
-                        <div class="pt-2">
-                            <button id="sim-start-btn" class="w-full bg-brand-500 text-black font-display text-2xl font-bold py-3 hover:bg-white transition-all shadow-[0_0_15px_rgba(138,255,0,0.4)] flex items-center justify-center gap-3">
-                                <i class="fas fa-play text-sm"></i> DISPARAR LÁSER
-                            </button>
-                            <button id="sim-reset-btn" class="w-full mt-2 bg-black text-gray-400 font-mono text-xs py-2 rounded border border-white/10 hover:text-white hover:border-brand-500/50">
-                                LIMPIAR MESA DE TRABAJO
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Canvas Workbench Viewport -->
-                    <div class="lg:col-span-8 flex flex-col items-center">
-                        <div class="w-full aspect-[4/3] bg-black border-2 border-brand-500/30 rounded-xl relative overflow-hidden shadow-2xl flex items-center justify-center group" id="sim-canvas-container">
-                            <!-- Main Canvas -->
-                            <canvas id="sim-canvas" class="w-full h-full block cursor-crosshair"></canvas>
-
-                            <!-- Machine HUD Specs Overlay -->
-                            <div class="absolute top-4 right-4 bg-black/80 backdrop-blur border border-brand-500/30 p-3 rounded font-mono text-xs text-left space-y-1 pointer-events-none">
-                                <div class="text-brand-500 font-bold">LASER TUBE CO2: <span class="text-white">100W</span></div>
-                                <div class="text-gray-400">PASO LÁSER: <span id="sim-hud-status" class="text-brand-500">LISTO</span></div>
-                                <div class="text-gray-400">CHILLER TEMP: <span class="text-white">19.5°C</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </section>
+        // Setup Simulator Workbench
+        const simCanvas = document.getElementById('sim-canvas');
+        const simCtx = simCanvas.getContext('2d');
 
     <!-- INSTANT QUOTE CALCULATOR SECTION -->
     <section id="cotizador" class="py-24 bg-dark-surface border-b border-brand-500/20 relative">
